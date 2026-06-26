@@ -15,6 +15,9 @@ _CREDENTIAL_PATTERNS = [
     re.compile(r"\bverify\s+(?:using\s+)?your\s+(?:pin|otp|password)\b", re.I),
     re.compile(r"\bconfirm\s+(?:with\s+)?your\s+(?:pin|otp|password)\b", re.I),
     re.compile(r"\byour\s+(?:4|6)[\s-]?digit\s+(?:pin|otp|code)\b", re.I),
+    # Bangla credential request patterns
+    re.compile(r"(?:পিন|ওটিপি|পাসওয়ার্ড)\s*(?:নম্বরটি|কোডটি)?\s*(?:প্রদান\s+করুন|দিন|শেয়ার\s+করুন|জানান|বলুন|পাঠান)", re.I),
+    re.compile(r"(?:প্রদান\s+করুন|দিন|শেয়ার\s+করুন|জানান|বলুন|পাঠান)\s*(?:আপনার\s+)?(?:পিন|ওটিপি|পাসওয়ার্ড)", re.I),
 ]
 
 # ── Unauthorized refund promise patterns ──────────────────────────────────────
@@ -71,9 +74,9 @@ def scrub_reply(customer_reply: str, language: str = "en") -> str:
     # Replace unauthorized refund promises
     reply = _replace_unauthorized_refunds(customer_reply)
 
-    # If credential request found → strip the sentence and log warning
-    if _check_credentials(reply):
-        logger.warning("Safety: credential request detected in customer_reply — stripping.")
+    # If credential request or third-party redirect found → strip/replace and log warning
+    if _check_credentials(reply) or _check_third_party(reply):
+        logger.warning("Safety: violation (credential or third-party redirect) detected in customer_reply — replacing.")
         # Replace entire reply with a safe generic one
         if language == "bn":
             reply = (
@@ -87,6 +90,7 @@ def scrub_reply(customer_reply: str, language: str = "en") -> str:
                 + _CREDENTIAL_REMINDER_EN
             )
         return reply
+
 
     # Ensure credential safety reminder is present
     bn_reminder_present = "পিন" in reply and "ওটিপি" in reply
