@@ -11,6 +11,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("/")
+async def root():
+    """Return a welcome message for the API."""
+    return {
+        "message": "QueueStorm Ticket Investigator API is running.",
+        "endpoints": {
+            "analyze_ticket": "/analyze-ticket (POST)",
+            "health": "/health (GET)",
+            "documentation": "/docs (GET)"
+        }
+    }
+
+
+
+
 @router.get(
     "/health",
     response_model=HealthResponse,
