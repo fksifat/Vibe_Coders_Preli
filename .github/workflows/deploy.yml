@@ -20,8 +20,19 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            # Navigate to the project directory
-            cd ~/SUST_Hackathon_Preli || { echo "Directory not found! Cloning repository..."; git clone https://github.com/${{ github.repository }}.git ~/SUST_Hackathon_Preli; cd ~/SUST_Hackathon_Preli; }
+            # Clean up directory if it exists but is not a git repository
+            if [ -d ~/SUST_Hackathon_Preli ] && [ ! -d ~/SUST_Hackathon_Preli/.git ]; then
+                echo "Directory exists but is not a git repository. Cleaning it up..."
+                rm -rf ~/SUST_Hackathon_Preli
+            fi
+
+            # Clone the repository if it doesn't exist
+            if [ ! -d ~/SUST_Hackathon_Preli ]; then
+                echo "Cloning repository..."
+                git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git ~/SUST_Hackathon_Preli
+            fi
+
+            cd ~/SUST_Hackathon_Preli
             
             # Fetch latest changes
             git fetch --all
@@ -31,7 +42,7 @@ jobs:
             chmod +x deploy_ec2.sh
             
             # Restart/rebuild the containers using docker-compose
-            docker compose up --build -d
+            sudo docker compose up --build -d
             
             # Verify status
-            docker compose ps
+            sudo docker compose ps
