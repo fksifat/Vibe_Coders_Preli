@@ -1,0 +1,37 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            # Navigate to the project directory
+            cd ~/SUST_Hackathon_Preli || { echo "Directory not found! Cloning repository..."; git clone https://github.com/${{ github.repository }}.git ~/SUST_Hackathon_Preli; cd ~/SUST_Hackathon_Preli; }
+            
+            # Fetch latest changes
+            git fetch --all
+            git reset --hard origin/main
+            
+            # Ensure deploy script is executable
+            chmod +x deploy_ec2.sh
+            
+            # Restart/rebuild the containers using docker-compose
+            docker compose up --build -d
+            
+            # Verify status
+            docker compose ps
